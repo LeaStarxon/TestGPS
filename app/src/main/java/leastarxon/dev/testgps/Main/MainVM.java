@@ -1,10 +1,12 @@
 package leastarxon.dev.testgps.Main;
 
 import android.content.Context;
+import android.content.Intent;
 import android.databinding.BaseObservable;
 import android.databinding.Bindable;
 import android.location.Location;
 import android.location.LocationManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
@@ -18,7 +20,9 @@ import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
 
 public class MainVM extends BaseObservable {
+    private AlertDialog alertGPS;
     private AppCompatActivity context;
+    private boolean alertGpsIsShowing = false;
     public static boolean geolocationEnabled = false;
     private LocationManager locationManager;
     private LocationRequest request;
@@ -101,12 +105,31 @@ public class MainVM extends BaseObservable {
     private boolean buildAlertMessageNoLocationService(boolean network_enabled) {
 
         if (!network_enabled) {
-
+            if (alertGPS != null && !alertGpsIsShowing) {
+                alertGPS.show();
+                alertGpsIsShowing = true;
+            }
             return false;
+        } else {
+            if (alertGPS != null && alertGPS.isShowing()) {
+                alertGPS.dismiss();
+                alertGpsIsShowing = false;
+            }
         }
         return true;
     }
 
+    private void initDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setCancelable(false)
+                .setMessage("GPS не включен")
+                .setPositiveButton("Включить", (dialog, id) -> {
+                    context.startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    dialog.dismiss();
+                    alertGpsIsShowing = false;
+                });
+        alertGPS = builder.create();
+    }
 
     public void onDestroy() {
         subscriptions.dispose();
@@ -120,6 +143,7 @@ public class MainVM extends BaseObservable {
 
     public void setContext(AppCompatActivity context) {
         this.context = context;
+        initDialog();
     }
 
     @Bindable
