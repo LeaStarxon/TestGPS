@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+
+    <data>
+
+        <variable
+            name="mainVM"
+            type="leastarxon.dev.testgps.Main.MainVM" />
+        <import type="android.view.View"/>
+    </data>
+
+    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/restart"
+                android:onClick="@{mainVM.restart}"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/data"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:gravity="center"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:text="@{mainVM.currentLocation}"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/error"
+                android:visibility='@{mainVM.error != null &amp;&amp; mainVM.error != "" ? View.VISIBLE : View.GONE}'
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:text="@{mainVM.error}"
+                android:visibility='@{mainVM.error != null &amp;&amp; mainVM.error != "" ? View.VISIBLE : View.GONE}'
+                android:textSize="14sp" />
+        </LinearLayout>
+    </ScrollView>
+</layout>
