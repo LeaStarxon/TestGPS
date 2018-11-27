@@ -15,6 +15,7 @@ import com.google.android.gms.location.LocationRequest;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
 import leastarxon.dev.testgps.BR;
+import leastarxon.dev.testgps.R;
 import leastarxon.dev.testgps.Utils.PermissionHelper;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
@@ -22,17 +23,16 @@ import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 public class MainVM extends BaseObservable {
     private AlertDialog alertGPS;
     private AppCompatActivity context;
-    private boolean alertGpsIsShowing = false;
-    public static boolean geolocationEnabled = false;
-    private LocationManager locationManager;
     private LocationRequest request;
     private ReactiveLocationProvider locationProvider;
+    private boolean alertGpsIsShowing = false;
+    private static boolean geolocationEnabled = false;
     private boolean isStart = false;
     private String currentLocation;
     private String error;
     private CompositeDisposable subscriptions;
 
-    public void init() {
+     void init() {
         subscriptions = new CompositeDisposable();
         startCheckGps();
     }
@@ -92,7 +92,7 @@ public class MainVM extends BaseObservable {
     }
 
     private boolean checkLocationServiceEnabled() {
-        locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         try {
             geolocationEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         } catch (Exception ex) {
@@ -122,8 +122,8 @@ public class MainVM extends BaseObservable {
     private void initDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setCancelable(false)
-                .setMessage("GPS не включен")
-                .setPositiveButton("Включить", (dialog, id) -> {
+                .setMessage(R.string.gps_not_work)
+                .setPositiveButton(context.getString(R.string.turn_on), (dialog, id) -> {
                     context.startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
                     dialog.dismiss();
                     alertGpsIsShowing = false;
@@ -131,17 +131,19 @@ public class MainVM extends BaseObservable {
         alertGPS = builder.create();
     }
 
-    public void onDestroy() {
+    void onDestroy() {
         subscriptions.dispose();
+        locationProvider = null;
+        request = null;
     }
 
-    public void onResume() {
+    void onResume() {
         if (context != null) {
             startCheckGps();
         }
     }
 
-    public void setContext(AppCompatActivity context) {
+    void setContext(AppCompatActivity context) {
         this.context = context;
         initDialog();
     }

@@ -3,4 +3,6 @@
     <string name="data">Данные</string>
     <string name="error">Ошибка</string>
     <string name="restart">restart</string>
+    <string name="gps_not_work">GPS не включен</string>
+    <string name="turn_on">Включить</string>
 </resources>
