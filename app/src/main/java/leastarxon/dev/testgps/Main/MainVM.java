@@ -1,15 +1,21 @@
 package leastarxon.dev.testgps.Main;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.databinding.BaseObservable;
 import android.databinding.Bindable;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.location.LocationRequest;
 
 import io.reactivex.disposables.CompositeDisposable;
@@ -21,9 +27,12 @@ import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
 
 public class MainVM extends BaseObservable {
+    private static int GOOGLE_SERVICE_VERSION = 11800000;
     private AlertDialog alertGPS;
     private AppCompatActivity context;
     private LocationRequest request;
+    private LocationManager locationManager;
+    private LocationListener locationListener;
     private ReactiveLocationProvider locationProvider;
     private boolean alertGpsIsShowing = false;
     private static boolean geolocationEnabled = false;
@@ -32,7 +41,7 @@ public class MainVM extends BaseObservable {
     private String error;
     private CompositeDisposable subscriptions;
 
-     void init() {
+    void init() {
         subscriptions = new CompositeDisposable();
         startCheckGps();
     }
@@ -49,7 +58,7 @@ public class MainVM extends BaseObservable {
         if (PermissionHelper.checkPermissionsForGPS(context)) {
             if (checkLocationServiceEnabled()) {
                 //startLocation
-                takeCoords();
+                checkVersionGS();
                 setError(null);
             } else {
                 //no gps
@@ -61,7 +70,32 @@ public class MainVM extends BaseObservable {
         }
     }
 
-    private void takeCoords() {
+    private void checkVersionGS() {
+        try {
+            //todo no const!
+            PackageManager packageManager = context.getPackageManager();
+            PackageInfo packageInfo = packageManager.getPackageInfo(GoogleApiAvailability.GOOGLE_PLAY_SERVICES_PACKAGE, 0);
+            int v = packageInfo.versionCode;
+            if (v < GOOGLE_SERVICE_VERSION) {
+                takeCoordsOldApi();
+            } else {
+                takeCoordsNewApi();
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            setError("PackageManager.NameNotFoundException " + e.getMessage());
+        }
+
+
+    }
+
+    @SuppressLint("MissingPermission")
+    private void takeCoordsOldApi() {
+        locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        locationListener = new OldLocationListener();
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 15_000, 0f, locationListener);
+    }
+
+    private void takeCoordsNewApi() {
         request = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(15_000);
@@ -133,6 +167,9 @@ public class MainVM extends BaseObservable {
 
     void onDestroy() {
         subscriptions.dispose();
+        if (locationManager != null && locationListener != null) {
+            locationManager.removeUpdates(locationListener);
+        }
         locationProvider = null;
         request = null;
     }
@@ -177,5 +214,29 @@ public class MainVM extends BaseObservable {
     public void setError(String error) {
         this.error = error;
         notifyPropertyChanged(BR.error);
+    }
+
+    private class OldLocationListener implements LocationListener {
+
+        @Override
+        public void onLocationChanged(Location loc) {
+            saveLocation(loc);
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+           setError("provider gps disabled " + provider);
+        }
+
     }
 }
