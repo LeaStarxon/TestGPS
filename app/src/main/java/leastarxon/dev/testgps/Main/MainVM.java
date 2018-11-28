@@ -1,5 +1,6 @@
 package leastarxon.dev.testgps.Main;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -11,6 +12,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -33,6 +35,8 @@ public class MainVM extends BaseObservable {
     private LocationRequest request;
     private LocationManager locationManager;
     private LocationListener locationListener;
+    private String process;
+    private StringBuilder processBuilder = new StringBuilder();
     private ReactiveLocationProvider locationProvider;
     private boolean alertGpsIsShowing = false;
     private static boolean geolocationEnabled = false;
@@ -47,55 +51,85 @@ public class MainVM extends BaseObservable {
     }
 
     public View.OnClickListener restart = v -> {
+        processBuilder.append("Click restart\n");
+        setProcess(processBuilder.toString());
         onDestroy();
         subscriptions = new CompositeDisposable();
         setError(null);
         setCurrentLocation("");
+        setProcess("");
+        processBuilder = new StringBuilder();
         onResume();
     };
 
     private void startCheckGps() {
+        processBuilder.append("start check gps\n");
+        setProcess(processBuilder.toString());
         if (PermissionHelper.checkPermissionsForGPS(context)) {
+            processBuilder.append("permissions success\n");
+            setProcess(processBuilder.toString());
             if (checkLocationServiceEnabled()) {
+                processBuilder.append("gps enabled\n");
+                setProcess(processBuilder.toString());
                 //startLocation
                 checkVersionGS();
                 setError(null);
             } else {
                 //no gps
                 setError("No gps");
+                processBuilder.append("gps error\n");
+                setProcess(processBuilder.toString());
             }
         } else {
             //no permission
             setError("No permissions");
+            processBuilder.append("permissions error\n");
+            setProcess(processBuilder.toString());
         }
     }
 
     private void checkVersionGS() {
+        processBuilder.append("check versions gs\n");
+        setProcess(processBuilder.toString());
         try {
             //todo no const!
             PackageManager packageManager = context.getPackageManager();
             PackageInfo packageInfo = packageManager.getPackageInfo(GoogleApiAvailability.GOOGLE_PLAY_SERVICES_PACKAGE, 0);
             int v = packageInfo.versionCode;
+            processBuilder.append("gs version =" + String.valueOf(v) + "\n");
+            setProcess(processBuilder.toString());
             if (v < GOOGLE_SERVICE_VERSION) {
                 takeCoordsOldApi();
             } else {
                 takeCoordsNewApi();
             }
         } catch (PackageManager.NameNotFoundException e) {
+            processBuilder.append("error check Versions gs\n");
+            setProcess(processBuilder.toString());
             setError("PackageManager.NameNotFoundException " + e.getMessage());
         }
 
 
     }
 
-    @SuppressLint("MissingPermission")
+
     private void takeCoordsOldApi() {
+        setStart(true);
+        processBuilder.append("start old api gps\n");
+        setProcess(processBuilder.toString());
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         locationListener = new OldLocationListener();
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            processBuilder.append("old api no permissions\n");
+            setProcess(processBuilder.toString());
+            return;
+        }
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 15_000, 0f, locationListener);
     }
 
     private void takeCoordsNewApi() {
+        processBuilder.append("start new api gps\n");
+        setProcess(processBuilder.toString());
         request = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(15_000);
@@ -107,16 +141,22 @@ public class MainVM extends BaseObservable {
                     .subscribe(this::saveLocation, throwable -> {
                         //error take location
                         setError("Throwable in getUpdatedLocation " + (throwable != null ? throwable.getMessage() : "Null throwable"));
+                        processBuilder.append("new api error getUpdatedLocations\n");
+                        setProcess(processBuilder.toString());
                     })
             );
         } catch (SecurityException ex) {
             //securityError
             setError("Throwable in getUpdatedLocation security (try/catch) " + ex.getMessage());
+            processBuilder.append("new Api error security\n");
+            setProcess(processBuilder.toString());
             setStart(false);
         }
     }
 
     private void saveLocation(Location location) {
+        processBuilder.append("save location\n");
+        setProcess(processBuilder.toString());
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("lat = ");
         stringBuilder.append(location.getLatitude());
@@ -126,12 +166,16 @@ public class MainVM extends BaseObservable {
     }
 
     private boolean checkLocationServiceEnabled() {
+        processBuilder.append("check gps on\n");
+        setProcess(processBuilder.toString());
         LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         try {
             geolocationEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         } catch (Exception ex) {
             //error check location
             setError("error check location " + ex.getMessage());
+            processBuilder.append("error check gps\n");
+            setProcess(processBuilder.toString());
         }
         return buildAlertMessageNoLocationService(geolocationEnabled);
     }
@@ -140,6 +184,8 @@ public class MainVM extends BaseObservable {
 
         if (!network_enabled) {
             if (alertGPS != null && !alertGpsIsShowing) {
+                processBuilder.append("dialog gps off build\n");
+                setProcess(processBuilder.toString());
                 alertGPS.show();
                 alertGpsIsShowing = true;
             }
@@ -166,9 +212,13 @@ public class MainVM extends BaseObservable {
     }
 
     void onDestroy() {
+        processBuilder.append("destroy\n");
+        setProcess(processBuilder.toString());
         subscriptions.dispose();
         if (locationManager != null && locationListener != null) {
             locationManager.removeUpdates(locationListener);
+            processBuilder.append("old api remove updates\n");
+            setProcess(processBuilder.toString());
         }
         locationProvider = null;
         request = null;
@@ -176,6 +226,8 @@ public class MainVM extends BaseObservable {
 
     void onResume() {
         if (context != null) {
+            processBuilder.append("restart check gps coords\n");
+            setProcess(processBuilder.toString());
             startCheckGps();
         }
     }
@@ -216,10 +268,22 @@ public class MainVM extends BaseObservable {
         notifyPropertyChanged(BR.error);
     }
 
+    @Bindable
+    public String getProcess() {
+        return process;
+    }
+
+    public void setProcess(String process) {
+        this.process = process;
+        notifyPropertyChanged(BR.process);
+    }
+
     private class OldLocationListener implements LocationListener {
 
         @Override
         public void onLocationChanged(Location loc) {
+            processBuilder.append("LocationListener onchanged\n");
+            setProcess(processBuilder.toString());
             saveLocation(loc);
         }
 
@@ -235,7 +299,9 @@ public class MainVM extends BaseObservable {
 
         @Override
         public void onProviderDisabled(String provider) {
-           setError("provider gps disabled " + provider);
+            setError("provider gps disabled " + provider);
+            processBuilder.append("Location Listener provider disabled\n");
+            setProcess(processBuilder.toString());
         }
 
     }

@@ -34,12 +34,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
-                android:gravity="center"
                 android:paddingLeft="8dp"
                 android:paddingRight="8dp"
                 android:text="@{mainVM.currentLocation}"
                 android:textSize="14sp" />
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -57,6 +55,23 @@
                 android:text="@{mainVM.error}"
                 android:visibility='@{mainVM.error != null &amp;&amp; mainVM.error != "" ? View.VISIBLE : View.GONE}'
                 android:textSize="14sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/process"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:text="@{mainVM.process}"
+                android:textSize="14sp" />
+
+
         </LinearLayout>
     </ScrollView>
 </layout>
